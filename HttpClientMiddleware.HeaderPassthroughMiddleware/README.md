@@ -17,6 +17,11 @@ public class Startup
         app.UseMiddleware<HeaderPassthroughInboundMiddleware>(
             new List<string>{"X-Request-Id", "X-Correlation-Id"}
         );
+        
+        // alternatively, if you need more flexibility:
+        app.UseMiddleware<HeaderPassthroughInboundMiddleware>(
+            header => header.Key.StartsWith("X-Passthru-")
+        );
     }
 }
 ```
