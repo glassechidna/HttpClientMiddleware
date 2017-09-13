@@ -3,7 +3,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace HttpClientMiddleware
+namespace HttpClientMiddleware.MessageHandlerWrapperMiddleware
 {
     public class MessageHandlerWrapperMiddleware : IMiddleware
     {
@@ -22,21 +22,6 @@ namespace HttpClientMiddleware
             var handler = _handlerProvider(inner);
             var invoker = new HttpMessageInvoker(handler);
             return invoker.SendAsync(request, new CancellationToken());
-        }
-    }
-    
-    internal class DelegatingHandlerWrapperMiddleware : DelegatingHandler
-    {
-        private readonly Func<HttpRequestMessage, Task<HttpResponseMessage>> _next;
-
-        public DelegatingHandlerWrapperMiddleware(Func<HttpRequestMessage, Task<HttpResponseMessage>> next)
-        {
-            _next = next;
-        }
-
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            return _next(request);
         }
     }
 }

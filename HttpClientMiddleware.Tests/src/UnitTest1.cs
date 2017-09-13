@@ -21,8 +21,8 @@ namespace HttpClientMiddleware.Tests
             var client = new HttpClient(middleware.GetHandler());
 
             using (middleware.Push(
-                new MessageHandlerWrapperMiddleware(h => new Delegator(h)),
-                new MessageHandlerWrapperMiddleware(mockHttp)
+                new MessageHandlerWrapperMiddleware.MessageHandlerWrapperMiddleware(h => new Delegator(h)),
+                new MessageHandlerWrapperMiddleware.MessageHandlerWrapperMiddleware(mockHttp)
             ))
             {
                 var resp = await client.GetAsync("http://localhost/api/user/abc");
