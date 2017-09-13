@@ -15,7 +15,7 @@ script:
 deploy:
   provider: script
   skip_cleanup: true
-  script: /bin/bash -v -c 'dotnet nuget push -k $NUGET_API_KEY -s https://www.nuget.org **/bin/Debug/*.nupkg'
+  script: /bin/bash -v -c 'for pkg in $(ls **/bin/Debug/*.nupkg); do dotnet nuget push -k $NUGET_API_KEY -s https://www.nuget.org $pkg; done'
   on:
     tags: true
     branch: master
