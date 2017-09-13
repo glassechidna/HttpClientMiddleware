@@ -1,0 +1,17 @@
+language: csharp
+mono: none
+dotnet: 2.0.0
+dist: trusty
+sudo: false
+
+script:
+  - dotnet pack /p:PackageVersion=1.0.0-pre${TRAVIS_BUILD_NUMBER}
+
+deploy:
+  provider: script
+  skip_cleanup: true
+  script: /bin/bash -v -c 'dotnet nuget push -k $NUGET_API_KEY -s https://www.nuget.org **/bin/Debug/*.nupkg'
+  on:
+    tags: true
+    branch: master
+    repo: glassechidna/HttpClientMiddleware
