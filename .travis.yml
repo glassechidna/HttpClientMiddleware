@@ -5,7 +5,13 @@ dist: trusty
 sudo: false
 
 script:
-  - dotnet pack /p:PackageVersion=1.0.0-pre${TRAVIS_BUILD_NUMBER}
+  - |
+    version=1.0.0
+    if [ -z "$TRAVIS_TAG" ]; then
+      version="$version-pre${TRAVIS_BUILD_NUMBER}"
+    fi
+    dotnet pack /p:PackageVersion=${version}
+  - ls -lhR
 
 deploy:
   provider: script
