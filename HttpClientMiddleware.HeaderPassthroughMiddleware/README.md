@@ -14,7 +14,9 @@ public class Startup
 {
     public void Configure(IApplicationBuilder app)
     {
-        app.UseMiddleware<HeaderPassthroughInboundMiddleware>(new List<string>{"X-Request-Id", "X-Correlation-Id"});
+        app.UseMiddleware<HeaderPassthroughInboundMiddleware>(
+            new List<string>{"X-Request-Id", "X-Correlation-Id"}
+        );
     }
 }
 ```
