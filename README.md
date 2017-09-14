@@ -93,7 +93,7 @@ If you want to push middlewares onto the pipeline for only a defined period, you
 can do that too. It is done like so:
 
 ```csharp
-var client = new HttpClient(clientMiddleware.GetHandler());
+var client = new HttpClient(new HttpClientMiddleware().GetHandler());
 
 // ...
 
