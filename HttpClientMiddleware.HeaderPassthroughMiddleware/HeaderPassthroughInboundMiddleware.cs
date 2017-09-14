@@ -9,20 +9,23 @@ namespace HttpClientMiddleware.HeaderPassthroughMiddleware
 {
     public class HeaderPassthroughInboundMiddleware
     {
-        private readonly Func<KeyValuePair<string, StringValues>, bool> _whitelist;
         private readonly RequestDelegate _next;
+        private readonly HeaderPassthroughOptions _options;
 
-        public HeaderPassthroughInboundMiddleware(RequestDelegate next, List<string> whitelist): this(next, pair => whitelist.Contains(pair.Key)) {}
+        public HeaderPassthroughInboundMiddleware(RequestDelegate next, ICollection<string> whitelist): this(next, new HeaderPassthroughOptions
+        {
+            Whitelist = pair => whitelist.Contains(pair.Key)
+        }) {}
         
-        public HeaderPassthroughInboundMiddleware(RequestDelegate next, Func<KeyValuePair<string,StringValues>,bool> whitelist)
+        public HeaderPassthroughInboundMiddleware(RequestDelegate next, HeaderPassthroughOptions options)
         {
             _next = next;
-            _whitelist = whitelist;
+            _options = options;
         }
 
         public async Task Invoke(HttpContext context)
         {
-            var headers = context.Request.Headers.Where(_whitelist);
+            var headers = context.Request.Headers.Where(_options.Whitelist);
             var outbound = new HeaderPassthroughOutboundMiddleware(headers);
             var cm = new HttpClientMiddleware();
             
@@ -30,6 +33,11 @@ namespace HttpClientMiddleware.HeaderPassthroughMiddleware
             {
                 await _next.Invoke(context);                
             }
+        }
+
+        public class HeaderPassthroughOptions
+        {
+            public Func<KeyValuePair<string, StringValues>, bool> Whitelist;
         }
     }
 }

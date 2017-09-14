@@ -19,9 +19,10 @@ public class Startup
         );
         
         // alternatively, if you need more flexibility:
-        app.UseMiddleware<HeaderPassthroughInboundMiddleware>(
-            header => header.Key.StartsWith("X-Passthru-")
-        );
+        app.UseMiddleware<HeaderPassthroughInboundMiddleware>(new HeaderPassthroughOptions
+        {
+            Whitelist = header => header.Key.StartsWith("X-Passthru-")
+        });
     }
 }
 ```
