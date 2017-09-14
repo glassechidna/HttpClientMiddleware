@@ -22,7 +22,6 @@ namespace HttpClientMiddleware.HeaderPassthroughMiddleware
 
         public async Task Invoke(HttpContext context)
         {
-            context.Request.Headers.First().Key.StartsWith("k")
             var headers = context.Request.Headers.Where(_whitelist);
             var outbound = new HeaderPassthroughOutboundMiddleware(headers);
             var cm = new HttpClientMiddleware();
