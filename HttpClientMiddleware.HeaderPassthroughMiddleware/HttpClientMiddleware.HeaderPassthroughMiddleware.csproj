@@ -1,6 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard1.6</TargetFramework>
+    <Description>Asp.Net Core and HttpClient middleware to pass through inbound request headers to downstream services</Description>
+    <Authors>Aidan Steele</Authors>
+    <PackageTags>httpclient middleware aspnetcore headers correlation</PackageTags>
+    <PackageProjectUrl>https://github.com/glassechidna/HttpClientMiddleware</PackageProjectUrl>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\HttpClientMiddleware\HttpClientMiddleware.csproj" />
