@@ -87,6 +87,24 @@ you want, or even replace it with an entirely new request object. The same goes
 for the response object. Just remember to call the provided `next()` to invoke
 the next step in the pipeline.
 
+### Advanced
+
+If you want to push middlewares onto the pipeline for only a defined period, you
+can do that too. It is done like so:
+
+```csharp
+var client = new HttpClient(clientMiddleware.GetHandler());
+
+// ...
+
+using (new HttpClientMiddleware().Push(new HostnameLoggerMiddleware()))
+{
+    var logged = await client.GetAsync("https://example.com"); // this one gets logged
+}
+
+var unlogged = await client.GetAsync("https://example.com"); // this one doesn't
+```
+
 ## Provided middlewares
 
 A few middlewares have been written to cover common use cases. Feel free to use
