@@ -6,7 +6,7 @@ sudo: false
 
 script:
   - |
-    version=1.0.4
+    version=1.0.5
     if [ -z "$TRAVIS_TAG" ]; then
       version="$version-pre${TRAVIS_BUILD_NUMBER}"
     fi
