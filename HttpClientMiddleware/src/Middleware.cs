@@ -19,7 +19,7 @@ namespace HttpClientMiddleware
         {
             var stack = _httpClientMiddleware.GetOrCreateMiddlewareStack();
             
-            var func = stack.Aggregate<IMiddleware, Func<HttpRequestMessage, Task<HttpResponseMessage>>>(
+            var func = stack.Reverse().Aggregate<IMiddleware, Func<HttpRequestMessage, Task<HttpResponseMessage>>>(
                 req => base.SendAsync(request, cancellationToken), 
                 (fn, middleware) => req => middleware.Invoke(req, fn)
             );
