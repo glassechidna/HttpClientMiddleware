@@ -10,7 +10,7 @@ script:
     if [ -z "$TRAVIS_TAG" ]; then
       version="$version-pre${TRAVIS_BUILD_NUMBER}"
     fi
-    dotnet pack /p:PackageVersion=${version}
+    dotnet pack --include-symbols --include-source /p:PackageVersion=${version}
 
 deploy:
   provider: script
