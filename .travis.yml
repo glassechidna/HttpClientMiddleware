@@ -6,11 +6,16 @@ sudo: false
 
 script:
   - |
-    version=1.0.5
+    version=1.0.6
     if [ -z "$TRAVIS_TAG" ]; then
       version="$version-pre${TRAVIS_BUILD_NUMBER}"
     fi
     dotnet pack --include-symbols --include-source /p:PackageVersion=${version}
+
+    for pkg in HttpClientMiddleware HttpClientMiddleware.HeaderPassthroughMiddleware HttpClientMiddleware.MessageHandlerWrapperMiddleware; do
+      rm ${pkg}/bin/Debug/${pkg}.${version}.nupkg
+      mv ${pkg}/bin/Debug/${pkg}.${version}.symbols.nupkg ${pkg}/bin/Debug/${pkg}.${version}.nupkg
+    done 
 
 deploy:
   provider: script
