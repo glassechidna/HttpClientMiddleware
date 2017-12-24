@@ -11,25 +11,26 @@ namespace HttpClientMiddleware.HeaderPassthroughMiddleware
     {
         private readonly RequestDelegate _next;
         private readonly HeaderPassthroughOptions _options;
+        private readonly HttpClientMiddlewareHandler _handler;
 
-        public HeaderPassthroughInboundMiddleware(RequestDelegate next, ICollection<string> whitelist): this(next, new HeaderPassthroughOptions
+        public HeaderPassthroughInboundMiddleware(RequestDelegate next, ICollection<string> whitelist, HttpClientMiddlewareHandler handler): this(next, new HeaderPassthroughOptions
         {
             Whitelist = pair => whitelist.Contains(pair.Key)
-        }) {}
+        }, handler) {}
         
-        public HeaderPassthroughInboundMiddleware(RequestDelegate next, HeaderPassthroughOptions options)
+        public HeaderPassthroughInboundMiddleware(RequestDelegate next, HeaderPassthroughOptions options, HttpClientMiddlewareHandler handler)
         {
             _next = next;
             _options = options;
+            _handler = handler;
         }
 
         public async Task Invoke(HttpContext context)
         {
             var headers = context.Request.Headers.Where(_options.Whitelist);
             var outbound = new HeaderPassthroughOutboundMiddleware(headers);
-            var cm = new HttpClientMiddleware();
             
-            using (cm.Push(outbound))
+            using (_handler.Push(outbound))
             {
                 await _next.Invoke(context);                
             }

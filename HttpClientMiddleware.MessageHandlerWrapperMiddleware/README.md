@@ -14,7 +14,7 @@ public class Startup
     public void Configure(IApplicationBuilder app)
     {
         var wrapper = new MessageHandlerWrapperMiddleware(innner => new YourDelegatingHandler(inner));
-        new HttpClientMiddleware().Register(wrapper);
+        new HttpClientMiddlewareHandler().Register(wrapper);
     }
 }
 ```

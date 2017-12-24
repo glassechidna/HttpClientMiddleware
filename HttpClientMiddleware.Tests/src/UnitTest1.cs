@@ -6,7 +6,7 @@ using RichardSzalay.MockHttp;
 using Xunit;
 
 namespace HttpClientMiddleware.Tests
-{
+{    
     public class UnitTest1
     {
         [Fact]
@@ -17,8 +17,8 @@ namespace HttpClientMiddleware.Tests
             mockHttp.When("http://localhost/api/user/*")
                 .Respond("application/json", "{'name' : 'Test McGee'}");
             
-            var middleware = new HttpClientMiddleware();
-            var client = new HttpClient(middleware.GetHandler());
+            var middleware = new HttpClientMiddlewareHandler();
+            var client = new HttpClient(middleware);
 
             using (middleware.Push(
                 new MessageHandlerWrapperMiddleware.MessageHandlerWrapperMiddleware(h => new Delegator(h)),
@@ -27,11 +27,10 @@ namespace HttpClientMiddleware.Tests
             {
                 var resp = await client.GetAsync("http://localhost/api/user/abc");
                 var body = await resp.Content.ReadAsStringAsync();
-                Assert.Equal(body, "{'name': 'Test McGee'}");
+                Assert.Equal(body, "{'name' : 'Test McGee'}");
             }
-            
-
         }
+        
         
 //        [Fact]
 //        public async void Test1()

@@ -18,9 +18,8 @@ but it can get fiddly and isn't nearly as easy the middleware pipelining
 for inbound requests.
 
 HttpClientMiddleware instead lets you register middlewares at application
-launch (just like ASP.Net Core) and has a convenient accessor method that
-can be used to retrieve a HttpMessageHandler to use in your HttpClient
-constructor. 
+launch (just like ASP.Net Core) on a `HttpClientMiddlewareHandler`, which
+can then be used as a HttpMessageHandler to use in your HttpClient constructor. 
 
 Middlewares can also be pushed onto the pipeline stack for shorter periods, 
 e.g. if you want to do perform additional pipeline steps only for certain
@@ -36,14 +35,16 @@ Usage is very straightforward. Anywhere you construct a HttpClient, do
 the following:
 
 ```csharp
-/* feel free to DI inject this or instantiate a new one every time - the 
-effect is the same. IHttpClientMiddleware and this public constructor 
-are provided solely for mocking during unit tests. */
-var client = new HttpClient(new HttpClientMiddleware().GetHandler());
+/* in all but the smallest toy programs, this is either a global or 
+DI-injected. Suggested usage is as a DI-injected singleton with
+middlewares registered at app startup, like ASP.Net Core.
+*/
+var middlewareHandler = new HttpClientMiddlewareHandler();
+var client = new HttpClient(middlewareHandler);
 ```
 
 Now all requests initiated using this HttpClient instance will pass through 
-the middleware pipeline.
+the middleware pipeline registered with this handler.
 
 Part two is adding middlewares to the pipeline. This can be done in one of two
 ways. The first is similar to ASP.Net Core inbound middlewares:
@@ -51,14 +52,21 @@ ways. The first is similar to ASP.Net Core inbound middlewares:
 ```csharp
 public class Startup
 {
-    public void Configure(IApplicationBuilder app)
+    public void ConfigureServices(IServiceCollection services)
     {
-        /* you don't need to hold onto the HttpClientMiddleware instance - but 
-        feel free if you want to. we will define HostnameLoggerMiddleware in 
-        the next step. */
-        new HttpClientMiddleware().Register(new HostnameLoggerMiddleware());
+        services.TryAddSingleton(sp => 
+        {
+            var handler = new HttpClientMiddlewareHandler();
+            handler.Register(new HostnameLoggerMiddleware());
+            return handler;            
+        });
 
-        // the other normal stuff...
+        /* 
+        consider using an injected HttpClient as below. then the rest of
+        your app needn't know about IHttpClientMiddlewareHandler _and_ it will
+        all use the registered pipelines automatically.
+        */
+        services.TryAddSingleton(sp => new HttpClient(sp.GetService<HttpClientMiddlewareHandler>()));
     }
 }
 
@@ -93,17 +101,89 @@ If you want to push middlewares onto the pipeline for only a defined period, you
 can do that too. It is done like so:
 
 ```csharp
-var client = new HttpClient(new HttpClientMiddleware().GetHandler());
+HttpClient client = ...; // injected from somewhere hopefully
 
 // ...
 
-using (new HttpClientMiddleware().Push(new HostnameLoggerMiddleware()))
+using (middlewareHandler.Push(new HostnameLoggerMiddleware()))
 {
     var logged = await client.GetAsync("https://example.com"); // this one gets logged
 }
 
 var unlogged = await client.GetAsync("https://example.com"); // this one doesn't
 ```
+
+
+### How can I use this to super-charge my tests?
+
+So you've got a modern ASP.Net Core application: you'd probably describe it as
+a microservice - it receives inbound HTTP requests and has to make outbound
+HTTP requests in order to retrieve all the info it needs to formulate a response.
+When writing tests for this kind of system, you have two options:
+
+* Unit tests with mocks. Rather than making HTTP calls to your dependencies, you
+  mock out some kind of "Service" class with expected response objects.
+* Integration tests. Your tests send HTTP requests to real deployments of your
+  dependencies and you hope that they're reliable.
+
+HttpClientMiddleware provides a middleground when paired with [`RichardSzalay.MockHttp`][mock].
+Your application can still make its calls to `HttpClient.GetAsync`, but stubbed
+responses are provided by `MockHttpMessageHandler` and injected by `MockHttpMessageHandler`.
+See an example here: 
+
+[mock]: https://github.com/richardszalay/mockhttp
+
+```csharp
+    public class TestPassthrough
+    {        
+        [Fact]
+        public async void TestE2E()
+        {
+            var mockHttp = new MockHttpMessageHandler();
+            
+            mockHttp.When("https://httpbin.org/headers")
+                .Respond("application/json", @"{""headers"": {""Request-Id"": ""efgh-5678""}}");
+
+            var server = new TestServer(new WebHostBuilder().ConfigureServices(services =>
+            {
+                services.TryAddSingleton(new HttpClientMiddlewareHandler(mockHttp));
+            }).UseStartup<Startup>());
+
+            var client = server.CreateClient();
+
+            var resp = await client.GetAsync("http://api/");
+            var body = await resp.Content.ReadAsStringAsync();
+            
+            var json = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(body);
+            var reqId = json["headers"]["Request-Id"];
+            Assert.Equal(reqId, "efgh-5678");
+        }
+    }
+    
+    // ReSharper disable once ClassNeverInstantiated.Global
+    public class Startup
+    {
+        public void ConfigureServices(IServiceCollection services)
+        {
+            // during tests, there will already be one injected before this line. hence why we need
+            // to use *Try*AddSingleton.
+            services.TryAddSingleton(new HttpClientMiddlewareHandler());
+            services.TryAddSingleton(sp => new HttpClient(sp.GetService<HttpClientMiddlewareHandler>()));
+        }
+
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        {
+            app.Run(async context =>
+            {
+                var client = context.RequestServices.GetService<HttpClient>();
+                var resp = await client.GetAsync("https://httpbin.org/headers");
+                var body = await resp.Content.ReadAsStringAsync();
+                await context.Response.WriteAsync(body);
+            });
+        }
+    }
+```
+
 
 ## Provided middlewares
 
@@ -114,3 +194,16 @@ READMEs elsewhere in this repo.
 
 * [HeaderPassthroughMiddleware](HttpClientMiddleware.HeaderPassthroughMiddleware/README.md)
 * [MessageHandlerWrapperMiddleware](HttpClientMiddleware.MessageHandlerWrapperMiddleware/README.md)
+
+## History
+
+In HttpClientMiddleware 1.x, there was a `HttpClientMiddleware` class which used 
+a `static` stack of middlewares, so "holding onto" that object was unnecessary. 
+This was changed to the current `HttpClientMiddlewareHandler` class to allow for 
+more advanced scenarios, like co-hosting two ASP.Net Core applications in a single 
+process or registering (rather than pushing) middlewares in unit tests.
+
+Another breaking change was removing `HttpClientMiddleware.GetHandler()` and 
+making the `HttpClientMiddlewareHandler` class _itself_ the handler. This meant
+that in simple cases the `HttpClient` would take care of maintaing the lifespan
+of the middlewares.
