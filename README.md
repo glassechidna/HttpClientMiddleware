@@ -1,6 +1,7 @@
 # HttpClientMiddleware
 
 [![Build Status](https://travis-ci.org/glassechidna/HttpClientMiddleware.svg?branch=master)](https://travis-ci.org/glassechidna/HttpClientMiddleware)
+[![NuGet](https://img.shields.io/nuget/v/HttpClientMiddleware.svg)]()
 
 ## What
 
