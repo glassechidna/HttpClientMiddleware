@@ -54,19 +54,21 @@ public class Startup
 {
     public void ConfigureServices(IServiceCollection services)
     {
-        services.TryAddSingleton(sp => 
-        {
-            var handler = new HttpClientMiddlewareHandler();
-            handler.Register(new HostnameLoggerMiddleware());
-            return handler;            
-        });
+        /*
+        this indirection is so that everything works with the right middleware
+        handler when unit tests inject their own handler. see further down
+        in the README for more details.
+        */
+        services.TryAddSingleton(new HttpClientMiddlewareHandler());
+        var handler = services.BuildServiceProvider().GetService<HttpClientMiddlewareHandler>();
+        handler.Register(new HostnameLoggerMiddleware());
 
         /* 
         consider using an injected HttpClient as below. then the rest of
         your app needn't know about IHttpClientMiddlewareHandler _and_ it will
         all use the registered pipelines automatically.
         */
-        services.TryAddSingleton(sp => new HttpClient(sp.GetService<HttpClientMiddlewareHandler>()));
+        services.TryAddSingleton(sp => new HttpClient(handler));
     }
 }
 
