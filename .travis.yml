@@ -16,7 +16,7 @@ script:
     fi
     dotnet pack --include-symbols --include-source /p:PackageVersion=${version}
 
-    for pkg in HttpClientMiddleware HttpClientMiddleware.HeaderPassthroughMiddleware HttpClientMiddleware.MessageHandlerWrapperMiddleware; do
+    for pkg in HttpClientMiddleware HttpClientMiddleware.HeaderPassthroughMiddleware HttpClientMiddleware.MessageHandlerWrapperMiddleware HttpClientMiddleware.AspNetCore; do
       rm ${pkg}/bin/Debug/${pkg}.${version}.nupkg
       mv ${pkg}/bin/Debug/${pkg}.${version}.symbols.nupkg ${pkg}/bin/Debug/${pkg}.${version}.nupkg
     done 

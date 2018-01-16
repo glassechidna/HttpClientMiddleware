@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using HttpClientMiddleware.AspNetCore;
 using HttpClientMiddleware.HeaderPassthroughMiddleware;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -44,7 +45,7 @@ namespace HttpClientMiddleware.Tests
 
             var server = new TestServer(new WebHostBuilder().ConfigureServices(services =>
             {
-                services.TryAddSingleton(new HttpClientMiddlewareHandler(mockHttp));
+                services.TryAddSingleton<IHttpClientMiddlewareHandler>(new HttpClientMiddlewareHandler(mockHttp));
             }).UseStartup<Startup>());
 
             var client = server.CreateClient();
@@ -67,8 +68,7 @@ namespace HttpClientMiddleware.Tests
     {
         public void ConfigureServices(IServiceCollection services)
         {
-            services.TryAddSingleton(new HttpClientMiddlewareHandler());
-            services.TryAddSingleton(sp => new HttpClient(sp.GetService<HttpClientMiddlewareHandler>()));
+            services.AddHttpClientMiddleware();
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)

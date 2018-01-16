@@ -21,9 +21,9 @@ namespace HttpClientMiddleware
             return Middlewares.Reverse().Aggregate(baseFunc, (fn, middleware) => req => middleware.Invoke(req, fn));
         }
 
-        public void Register(IMiddleware middleware)
+        public HttpMessageHandler Handler()
         {
-            Middlewares = Middlewares.Push(middleware);
+            return this;
         }
 
         public IDisposable Push(params IMiddleware[] middlewares)

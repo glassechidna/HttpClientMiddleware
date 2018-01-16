@@ -11,6 +11,7 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="2.2.0" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\HttpClientMiddleware.AspNetCore\HttpClientMiddleware.AspNetCore.csproj" />
     <ProjectReference Include="..\HttpClientMiddleware.HeaderPassthroughMiddleware\HttpClientMiddleware.HeaderPassthroughMiddleware.csproj" />
     <ProjectReference Include="..\HttpClientMiddleware.MessageHandlerWrapperMiddleware\HttpClientMiddleware.MessageHandlerWrapperMiddleware.csproj" />
     <ProjectReference Include="..\HttpClientMiddleware\HttpClientMiddleware.csproj" />

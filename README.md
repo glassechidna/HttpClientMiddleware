@@ -28,7 +28,9 @@ transactions.
 
 ## Where
 
-HttpClientMiddleware is available on [Nuget](https://www.nuget.org/packages/HttpClientMiddleware/).
+`HttpClientMiddleware` is available on [Nuget](https://www.nuget.org/packages/HttpClientMiddleware/). 
+
+`HttpClientMiddleware.AspNetCore` is also available on [Nuget](https://www.nuget.org/packages/HttpClientMiddleware.AspNetCore/).
 
 ## How
 
@@ -47,35 +49,7 @@ var client = new HttpClient(middlewareHandler);
 Now all requests initiated using this HttpClient instance will pass through 
 the middleware pipeline registered with this handler.
 
-Part two is adding middlewares to the pipeline. This can be done in one of two
-ways. The first is similar to ASP.Net Core inbound middlewares:
-
-```csharp
-public class Startup
-{
-    public void ConfigureServices(IServiceCollection services)
-    {
-        /*
-        this indirection is so that everything works with the right middleware
-        handler when unit tests inject their own handler. see further down
-        in the README for more details.
-        */
-        services.TryAddSingleton(new HttpClientMiddlewareHandler());
-        var handler = services.BuildServiceProvider().GetService<HttpClientMiddlewareHandler>();
-        handler.Register(new HostnameLoggerMiddleware());
-
-        /* 
-        consider using an injected HttpClient as below. then the rest of
-        your app needn't know about IHttpClientMiddlewareHandler _and_ it will
-        all use the registered pipelines automatically.
-        */
-        services.TryAddSingleton(sp => new HttpClient(handler));
-    }
-}
-
-```
-
-Part three is writing middlewares. This is only necessary if you want to do
+Part two is writing middlewares. This is only necessary if you want to do
 something that the existing middlewares doesn't already do for you. You can
 write a middleware as follows:
 
@@ -93,10 +67,41 @@ public class HostnameLoggerMiddleware : IMiddleware
 }
 ```
 
-You have the power to modify the supplied HttpRequest object in whichever way
+You have the power to modify the supplied `HttpRequestMessage` object in whichever way
 you want, or even replace it with an entirely new request object. The same goes
 for the response object. Just remember to call the provided `next()` to invoke
 the next step in the pipeline.
+
+Part three is adding middlewares to the pipeline. This can be done in one of two
+ways. The first is similar to ASP.Net Core inbound middlewares:
+
+```csharp
+public class Startup
+{
+    public void ConfigureServices(IServiceCollection services)
+    {
+        /*
+        this will inject an IHttpClientMiddlewareHandler and a HttpClient. if 
+        you don't want the HttpClient injected, you can instead run the 
+        commented-out code.
+        */
+        services.AddHttpClientMiddleware();
+
+        /*
+        services.AddHttpClientMiddleware(new HttpClientMiddlewareServiceOptions {
+            InjectHttpClient = false
+        });
+        */
+    }
+
+    public void Configure(IApplicationBuilder app)
+    {
+        app.UseHttpClientMiddleware(builder => {
+            builder.Add<HostnameLoggerMiddleware>();
+        });
+    }
+}
+```
 
 ### Advanced
 
@@ -149,7 +154,7 @@ See an example here:
 
             var server = new TestServer(new WebHostBuilder().ConfigureServices(services =>
             {
-                services.TryAddSingleton(new HttpClientMiddlewareHandler(mockHttp));
+                services.TryAddSingleton<IHttpClientMiddlewareHandler>(new HttpClientMiddlewareHandler(mockHttp));
             }).UseStartup<Startup>());
 
             var client = server.CreateClient();
@@ -168,10 +173,8 @@ See an example here:
     {
         public void ConfigureServices(IServiceCollection services)
         {
-            // during tests, there will already be one injected before this line. hence why we need
-            // to use *Try*AddSingleton.
-            services.TryAddSingleton(new HttpClientMiddlewareHandler());
-            services.TryAddSingleton(sp => new HttpClient(sp.GetService<HttpClientMiddlewareHandler>()));
+            // the IHttpClientMiddlewareHandler has already been injected by the TestServer
+            services.AddHttpClientMiddleware();
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
@@ -210,3 +213,8 @@ Another breaking change was removing `HttpClientMiddleware.GetHandler()` and
 making the `HttpClientMiddlewareHandler` class _itself_ the handler. This meant
 that in simple cases the `HttpClient` would take care of maintaing the lifespan
 of the middlewares.
+
+In HttpClientMiddleware < 2.1, there was also an `IHttpClientMiddlewareHandler.Register()`
+method. It caused all sorts of problems and was replaced by 
+the functionality in `HttpClientMiddleware.AspNetCore`. I didn't bother bumping 
+the major version as no one else has used 2.x yet.
