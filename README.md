@@ -154,7 +154,10 @@ See an example here:
 
             var server = new TestServer(new WebHostBuilder().ConfigureServices(services =>
             {
-                services.TryAddSingleton<IHttpClientMiddlewareHandler>(new HttpClientMiddlewareHandler(mockHttp));
+                services.AddHttpClientMiddleware(new HttpClientMiddlewareServiceOptions
+                {
+                    InnerHandler = mockHttp
+                });
             }).UseStartup<Startup>());
 
             var client = server.CreateClient();
