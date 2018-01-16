@@ -11,14 +11,14 @@ namespace HttpClientMiddleware.HeaderPassthroughMiddleware
     {
         private readonly RequestDelegate _next;
         private readonly HeaderPassthroughOptions _options;
-        private readonly HttpClientMiddlewareHandler _handler;
+        private readonly IHttpClientMiddlewareHandler _handler;
 
-        public HeaderPassthroughInboundMiddleware(RequestDelegate next, ICollection<string> whitelist, HttpClientMiddlewareHandler handler): this(next, new HeaderPassthroughOptions
+        public HeaderPassthroughInboundMiddleware(RequestDelegate next, ICollection<string> whitelist, IHttpClientMiddlewareHandler handler): this(next, new HeaderPassthroughOptions
         {
             Whitelist = pair => whitelist.Contains(pair.Key)
         }, handler) {}
         
-        public HeaderPassthroughInboundMiddleware(RequestDelegate next, HeaderPassthroughOptions options, HttpClientMiddlewareHandler handler)
+        public HeaderPassthroughInboundMiddleware(RequestDelegate next, HeaderPassthroughOptions options, IHttpClientMiddlewareHandler handler)
         {
             _next = next;
             _options = options;
