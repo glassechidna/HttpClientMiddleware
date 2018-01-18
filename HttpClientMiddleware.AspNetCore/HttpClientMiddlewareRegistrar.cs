@@ -28,9 +28,7 @@ namespace HttpClientMiddleware.AspNetCore
         public async Task Invoke(HttpContext context)
         {
             var sp = context.Features.Get<IServiceProvidersFeature>().RequestServices;
-
-            var middlewares = _builder.Definitions
-                .Select(def => (IMiddleware) ActivatorUtilities.CreateInstance(sp, def.Type, def.Args)).ToArray();
+            var middlewares = _builder.Definitions.Select(def => def.Create(sp)).ToArray();
 
             using (_handler.Push(middlewares))
             {
@@ -39,25 +37,52 @@ namespace HttpClientMiddleware.AspNetCore
         }
     }
 
-    class MiddlewareBuilderDefinition
+    interface IMiddlewareDefinition
     {
-        internal Type Type;
-        internal object[] Args;
+        IMiddleware Create(IServiceProvider provider);
+    }
 
-        public MiddlewareBuilderDefinition(Type type, object[] args)
+    class ActivationMiddlewareDefinition: IMiddlewareDefinition
+    {
+        private readonly Type _type;
+        private readonly object[] _args;
+
+        public ActivationMiddlewareDefinition(Type type, object[] args)
         {
-            Type = type;
-            Args = args;
+            _type = type;
+            _args = args;
+        }
+
+        public IMiddleware Create(IServiceProvider provider)
+        {
+            return (IMiddleware) ActivatorUtilities.CreateInstance(provider, _type, _args);
+        }
+    }
+
+    class InstanceMiddlewareDefinition : IMiddlewareDefinition
+    {
+        internal IMiddleware Middleware;
+        
+        public IMiddleware Create(IServiceProvider provider)
+        {
+            return Middleware;
         }
     }
 
     public class MiddlewareBuilder
     {
-        internal readonly List<MiddlewareBuilderDefinition> Definitions = new List<MiddlewareBuilderDefinition>();
+        internal readonly List<IMiddlewareDefinition> Definitions = new List<IMiddlewareDefinition>();
 
-        public void Add<TMiddleware>(params object[] args) where TMiddleware : IMiddleware
+        public MiddlewareBuilder Add<TMiddleware>(params object[] args) where TMiddleware : IMiddleware
         {
-            Definitions.Add(new MiddlewareBuilderDefinition(typeof(TMiddleware), args));
+            Definitions.Add(new ActivationMiddlewareDefinition(typeof(TMiddleware), args));
+            return this;
+        }
+        
+        public MiddlewareBuilder Add(IMiddleware middleware)
+        {
+            Definitions.Add(new InstanceMiddlewareDefinition{Middleware = middleware});
+            return this;
         }
     }
 
