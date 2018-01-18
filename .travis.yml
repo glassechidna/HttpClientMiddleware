@@ -10,7 +10,7 @@ script:
 
     dotnet test HttpClientMiddleware.Tests/HttpClientMiddleware.Tests.csproj
 
-    version=2.0.0
+    version=2.1.0
     if [ -z "$TRAVIS_TAG" ]; then
       version="$version-pre${TRAVIS_BUILD_NUMBER}"
     fi
