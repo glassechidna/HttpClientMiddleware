@@ -7,6 +7,7 @@
     <PackageProjectUrl>https://github.com/glassechidna/HttpClientMiddleware</PackageProjectUrl>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\HttpClientMiddleware.AspNetCore\HttpClientMiddleware.AspNetCore.csproj" />
     <ProjectReference Include="..\HttpClientMiddleware\HttpClientMiddleware.csproj" />
   </ItemGroup>
   <ItemGroup>

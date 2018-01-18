@@ -41,6 +41,7 @@ namespace HttpClientMiddleware.Tests
             var mockHttp = new MockHttpMessageHandler();
             
             mockHttp.When("https://httpbin.org/headers")
+                .WithHeaders("Request-Id", "abcd-1234")
                 .Respond("application/json", @"{""headers"": {""Request-Id"": ""efgh-5678""}}");
 
             var server = new TestServer(new WebHostBuilder().ConfigureServices(services =>
@@ -71,12 +72,20 @@ namespace HttpClientMiddleware.Tests
     {
         public void ConfigureServices(IServiceCollection services)
         {
+            services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddHttpClientMiddleware();
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
-            app.UseMiddleware<HeaderPassthroughInboundMiddleware>(new List<string> {"Request-Id"});
+            app.UseHttpClientMiddleware(builder =>
+            {
+                var opts = new HeaderPassthroughMiddleware.HeaderPassthroughMiddleware.Options
+                {
+                    Whitelist = kvp => kvp.Key == "Request-Id"
+                };
+                builder.UseHeaderPassthrough(opts);
+            });
             
             app.Run(async context =>
             {

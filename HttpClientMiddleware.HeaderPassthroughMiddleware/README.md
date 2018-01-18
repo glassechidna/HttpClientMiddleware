@@ -13,15 +13,14 @@ using HttpClientMiddleware.HeaderPassthroughMiddleware;
 public class Startup
 {
     public void Configure(IApplicationBuilder app)
-    {
-        app.UseMiddleware<HeaderPassthroughInboundMiddleware>(
-            new List<string>{"X-Request-Id", "X-Correlation-Id"}
-        );
-        
-        // alternatively, if you need more flexibility:
-        app.UseMiddleware<HeaderPassthroughInboundMiddleware>(new HeaderPassthroughOptions
+    {       
+        app.UseHttpClientMiddleware(builder =>
         {
-            Whitelist = header => header.Key.StartsWith("X-Passthru-")
+            var opts = new HeaderPassthroughMiddleware.HeaderPassthroughMiddleware.Options
+            {
+                Whitelist = kvp => kvp.Key == "Request-Id"
+            };
+            builder.UseHeaderPassthrough(opts);
         });
     }
 }
