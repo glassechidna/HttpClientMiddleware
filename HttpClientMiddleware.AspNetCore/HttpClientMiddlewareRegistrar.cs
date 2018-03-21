@@ -69,6 +69,24 @@ namespace HttpClientMiddleware.AspNetCore
         }
     }
 
+    class HandlerActivationMiddlewareDefinition: IMiddlewareDefinition
+    {
+        private readonly Type _type;
+        private readonly object[] _args;
+
+        public HandlerActivationMiddlewareDefinition(Type type, object[] args)
+        {
+            _type = type;
+            _args = args;
+        }
+
+        public IMiddleware Create(IServiceProvider provider)
+        {
+            var handler = (DelegatingHandler)ActivatorUtilities.CreateInstance(provider, _type, _args);
+            return new DelegatingWrapper(handler);
+        }
+    }
+
     public class MiddlewareBuilder
     {
         internal readonly List<IMiddlewareDefinition> Definitions = new List<IMiddlewareDefinition>();
@@ -76,6 +94,12 @@ namespace HttpClientMiddleware.AspNetCore
         public MiddlewareBuilder Add<TMiddleware>(params object[] args) where TMiddleware : IMiddleware
         {
             Definitions.Add(new ActivationMiddlewareDefinition(typeof(TMiddleware), args));
+            return this;
+        }
+        
+        public MiddlewareBuilder AddHandler<THandler>(params object[] args) where THandler : DelegatingHandler
+        {
+            Definitions.Add(new HandlerActivationMiddlewareDefinition(typeof(THandler), args));
             return this;
         }
         
